@@ -1,0 +1,173 @@
+import tkinter as tk
+from tkinter import ttk, messagebox, filedialog
+import subprocess
+import platform
+import re
+import csv
+
+# --- Funciones para escanear direcciones MAC ---
+
+def obtener_mac_windows():
+    """Obtiene direcciones MAC usando arp en Windows."""
+    resultado = []
+    try:
+        salida = subprocess.check_output("arp -a", shell=True, encoding="utf-8")
+        for linea in salida.splitlines():
+            match = re.match(r"^\s*([0-9\.]+)\s+([a-fA-F0-9\-]+)\s+\w+", linea)
+            if match:
+                ip = match.group(1)
+                mac = match.group(2)
+                resultado.append((ip, mac))
+    except Exception as e:
+        resultado.append(("Error", str(e)))
+    return resultado
+
+def obtener_mac_linux():
+    """Obtiene direcciones MAC usando arp en Linux."""
+    resultado = []
+    try:
+        salida = subprocess.check_output("arp -n", shell=True, encoding="utf-8")
+        for linea in salida.splitlines():
+            match = re.match(r"^\s*([0-9\.]+)\s+\S+\s+([a-fA-F0-9:]+)\s+", linea)
+            if match:
+                ip = match.group(1)
+                mac = match.group(2)
+                resultado.append((ip, mac))
+    except Exception as e:
+        resultado.append(("Error", str(e)))
+    return resultado
+
+def obtener_mac():
+    """Detecta el SO y obtiene las direcciones MAC."""
+    so = platform.system()
+    if so == "Windows":
+        return obtener_mac_windows()
+    else:
+        return obtener_mac_linux()
+
+# --- Clase principal de la aplicación ---
+
+class MacScannerApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Escáner de Direcciones MAC en Red Local")
+        self.geometry("900x600")
+        self.resizable(False, False)
+        self.configure(bg="#f4f8fb")
+        self.mac_data = []
+        self.crear_widgets()
+
+    def crear_widgets(self):
+        # Título
+        tk.Label(self, text="Escáner de Direcciones MAC", font=("Arial", 22, "bold"),
+                 bg="#f4f8fb", fg="#34495e").pack(pady=20)
+
+        # Frame principal
+        frame_main = tk.Frame(self, bg="#f4f8fb")
+        frame_main.pack(fill="both", expand=True, padx=30, pady=10)
+
+        # Tabla de resultados
+        self.tree = ttk.Treeview(frame_main, columns=("IP", "MAC"), show="headings", height=20)
+        self.tree.heading("IP", text="Dirección IP")
+        self.tree.heading("MAC", text="Dirección MAC")
+        self.tree.column("IP", width=200)
+        self.tree.column("MAC", width=300)
+        self.tree.pack(side="left", fill="y", padx=(0,10))
+
+        # Scrollbar
+        scrollbar = ttk.Scrollbar(frame_main, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscroll=scrollbar.set)
+        scrollbar.pack(side="left", fill="y")
+
+        # Frame de botones y filtros
+        frame_botones = tk.Frame(frame_main, bg="#f4f8fb")
+        frame_botones.pack(side="left", fill="both", expand=True)
+
+        # Botón escanear
+        tk.Button(frame_botones, text="Escanear Red", width=20, bg="#2ecc71", fg="white",
+                  font=("Arial", 11, "bold"), command=self.escanear_mac).pack(pady=10)
+
+        # Filtro por IP
+        tk.Label(frame_botones, text="Filtrar por IP:", font=("Arial", 12), bg="#f4f8fb").pack(pady=(20,0))
+        self.entry_ip = tk.Entry(frame_botones, width=25, font=("Arial", 12))
+        self.entry_ip.pack(pady=5)
+        tk.Button(frame_botones, text="Filtrar IP", width=15, bg="#3498db", fg="white",
+                  command=self.filtrar_ip).pack(pady=5)
+
+        # Filtro por MAC
+        tk.Label(frame_botones, text="Filtrar por MAC:", font=("Arial", 12), bg="#f4f8fb").pack(pady=(20,0))
+        self.entry_mac = tk.Entry(frame_botones, width=25, font=("Arial", 12))
+        self.entry_mac.pack(pady=5)
+        tk.Button(frame_botones, text="Filtrar MAC", width=15, bg="#9b59b6", fg="white",
+                  command=self.filtrar_mac).pack(pady=5)
+
+        # Botón limpiar filtros
+        tk.Button(frame_botones, text="Limpiar Filtros", width=15, bg="#f1c40f", fg="black",
+                  command=self.limpiar_filtros).pack(pady=20)
+
+        # Botón exportar
+        tk.Button(frame_botones, text="Exportar a CSV", width=20, bg="#34495e", fg="white",
+                  font=("Arial", 11, "bold"), command=self.exportar_csv).pack(pady=10)
+
+        # Pie de página
+        tk.Label(self, text="© 2025 MAC Scanner | Escanea y gestiona direcciones MAC en tu red local.",
+                 font=("Arial", 10), bg="#f4f8fb", fg="#888").pack(pady=10)
+
+    def escanear_mac(self):
+        """Escanea la red y muestra las direcciones MAC encontradas."""
+        self.mac_data = obtener_mac()
+        self.actualizar_tabla(self.mac_data)
+        if not self.mac_data:
+            messagebox.showinfo("Sin resultados", "No se encontraron direcciones MAC.")
+        else:
+            messagebox.showinfo("Escaneo completado", f"Se encontraron {len(self.mac_data)} dispositivos.")
+
+    def actualizar_tabla(self, datos):
+        """Actualiza la tabla con los datos proporcionados."""
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        for ip, mac in datos:
+            self.tree.insert("", "end", values=(ip, mac))
+
+    def filtrar_ip(self):
+        """Filtra la tabla por dirección IP."""
+        filtro = self.entry_ip.get().strip()
+        if not filtro:
+            return
+        filtrados = [item for item in self.mac_data if filtro in item[0]]
+        self.actualizar_tabla(filtrados)
+
+    def filtrar_mac(self):
+        """Filtra la tabla por dirección MAC."""
+        filtro = self.entry_mac.get().strip().lower()
+        if not filtro:
+            return
+        filtrados = [item for item in self.mac_data if filtro in item[1].lower()]
+        self.actualizar_tabla(filtrados)
+
+    def limpiar_filtros(self):
+        """Limpia los filtros y muestra todos los resultados."""
+        self.entry_ip.delete(0, tk.END)
+        self.entry_mac.delete(0, tk.END)
+        self.actualizar_tabla(self.mac_data)
+
+    def exportar_csv(self):
+        """Exporta los resultados a un archivo CSV."""
+        archivo = filedialog.asksaveasfilename(defaultextension=".csv",
+                                               filetypes=[("Archivo CSV", "*.csv")])
+        if archivo:
+            try:
+                with open(archivo, "w", newline="", encoding="utf-8") as f:
+                    writer = csv.writer(f)
+                    writer.writerow(["Dirección IP", "Dirección MAC"])
+                    for ip, mac in self.mac_data:
+                        writer.writerow([ip, mac])
+                messagebox.showinfo("Exportación exitosa", "Datos exportados correctamente.")
+            except Exception as e:
+                messagebox.showerror("Error", f"No se pudo exportar: {e}")
+
+# --- Código principal ---
+
+if __name__ == "__main__":
+    app = MacScannerApp()
+    app.mainloop()
