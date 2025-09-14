@@ -1,0 +1,208 @@
+import tkinter as tk
+from tkinter import ttk, messagebox, simpledialog, filedialog
+import webbrowser
+import os
+
+HTML_FILE = "politicas_seguridad.html"
+
+# --- Funciones para manejar el archivo HTML ---
+
+def crear_html_politicas(politicas):
+    """Crea o actualiza el archivo HTML con las políticas de seguridad."""
+    html = """<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Políticas de Seguridad</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background: #f7f7f7; }
+        h1 { color: #2c3e50; }
+        ul { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px #ccc; }
+        li { margin-bottom: 12px; }
+        .footer { margin-top: 40px; font-size: 0.9em; color: #888; }
+    </style>
+</head>
+<body>
+    <h1>Políticas de Seguridad</h1>
+    <ul>
+"""
+    for pol in politicas:
+        html += f"        <li>{pol}</li>\n"
+    html += """    </ul>
+    <div class="footer">
+        &copy; 2025 SeguridadApp. Todas las políticas están sujetas a cambios.
+    </div>
+</body>
+</html>
+"""
+    with open(HTML_FILE, "w", encoding="utf-8") as f:
+        f.write(html)
+
+def abrir_html_politicas():
+    """Abre el archivo HTML en el navegador predeterminado."""
+    if not os.path.exists(HTML_FILE):
+        crear_html_politicas([
+            "Protección de datos personales.",
+            "Uso seguro de contraseñas.",
+            "Actualizaciones periódicas de software.",
+            "Acceso restringido a información sensible.",
+            "Monitorización de actividad sospechosa."
+        ])
+    webbrowser.open_new_tab(os.path.abspath(HTML_FILE))
+
+def cargar_politicas_desde_html():
+    """Carga las políticas desde el archivo HTML si existe."""
+    politicas = []
+    if os.path.exists(HTML_FILE):
+        with open(HTML_FILE, "r", encoding="utf-8") as f:
+            for line in f:
+                if "<li>" in line:
+                    pol = line.strip().replace("<li>", "").replace("</li>", "")
+                    politicas.append(pol)
+    return politicas
+
+# --- Clase principal de la aplicación ---
+
+class PoliticasSeguridadApp(tk.Tk):
+    def __init__(self):
+        super().__init__()
+        self.title("Gestión de Políticas de Seguridad")
+        self.geometry("800x600")
+        self.resizable(False, False)
+        self.configure(bg="#eaf0f6")
+        self.politicas = cargar_politicas_desde_html()
+        if not self.politicas:
+            self.politicas = [
+                "Protección de datos personales.",
+                "Uso seguro de contraseñas.",
+                "Actualizaciones periódicas de software.",
+                "Acceso restringido a información sensible.",
+                "Monitorización de actividad sospechosa."
+            ]
+        self.crear_widgets()
+        self.actualizar_lista()
+
+    def crear_widgets(self):
+        # Título
+        self.label_titulo = tk.Label(self, text="Políticas de Seguridad", font=("Arial", 22, "bold"), bg="#eaf0f6", fg="#2c3e50")
+        self.label_titulo.pack(pady=20)
+
+        # Frame principal
+        self.frame_main = tk.Frame(self, bg="#eaf0f6")
+        self.frame_main.pack(fill="both", expand=True, padx=30, pady=10)
+
+        # Lista de políticas
+        self.tree = ttk.Treeview(self.frame_main, columns=("Política"), show="headings", height=15)
+        self.tree.heading("Política", text="Política de Seguridad")
+        self.tree.column("Política", width=600)
+        self.tree.pack(side="left", fill="y", padx=(0,10))
+
+        # Scrollbar
+        self.scrollbar = ttk.Scrollbar(self.frame_main, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscroll=self.scrollbar.set)
+        self.scrollbar.pack(side="left", fill="y")
+
+        # Frame de botones
+        self.frame_botones = tk.Frame(self.frame_main, bg="#eaf0f6")
+        self.frame_botones.pack(side="left", fill="both", expand=True)
+
+        # Campo de texto para nueva política
+        self.label_nueva = tk.Label(self.frame_botones, text="Agregar nueva política:", font=("Arial", 12), bg="#eaf0f6")
+        self.label_nueva.pack(pady=(10,0))
+        self.entry_nueva = tk.Entry(self.frame_botones, width=40, font=("Arial", 12))
+        self.entry_nueva.pack(pady=5)
+
+        # Botón agregar
+        self.btn_agregar = tk.Button(self.frame_botones, text="Agregar", width=18, bg="#2ecc71", fg="white", font=("Arial", 11, "bold"),
+                                     command=self.agregar_politica)
+        self.btn_agregar.pack(pady=5)
+
+        # Botón editar
+        self.btn_editar = tk.Button(self.frame_botones, text="Editar seleccionada", width=18, bg="#3498db", fg="white", font=("Arial", 11, "bold"),
+                                    command=self.editar_politica)
+        self.btn_editar.pack(pady=5)
+
+        # Botón eliminar
+        self.btn_eliminar = tk.Button(self.frame_botones, text="Eliminar seleccionada", width=18, bg="#e74c3c", fg="white", font=("Arial", 11, "bold"),
+                                      command=self.eliminar_politica)
+        self.btn_eliminar.pack(pady=5)
+
+        # Botón limpiar
+        self.btn_limpiar = tk.Button(self.frame_botones, text="Limpiar campo", width=18, bg="#f1c40f", fg="white", font=("Arial", 11, "bold"),
+                                     command=self.limpiar_campo)
+        self.btn_limpiar.pack(pady=5)
+
+        # Botón guardar en HTML
+        self.btn_guardar = tk.Button(self.frame_botones, text="Guardar en HTML", width=18, bg="#8e44ad", fg="white", font=("Arial", 11, "bold"),
+                                     command=self.guardar_html)
+        self.btn_guardar.pack(pady=5)
+
+        # Botón abrir HTML
+        self.btn_abrir_html = tk.Button(self.frame_botones, text="Ver Políticas en HTML", width=18, bg="#34495e", fg="white", font=("Arial", 11, "bold"),
+                                        command=abrir_html_politicas)
+        self.btn_abrir_html.pack(pady=5)
+
+        # Pie de página
+        self.label_footer = tk.Label(self, text="© 2025 SeguridadApp | Haz clic en 'Ver Políticas en HTML' para abrir el vínculo en tu navegador.",
+                                     font=("Arial", 10), bg="#eaf0f6", fg="#888")
+        self.label_footer.pack(pady=10)
+
+    def actualizar_lista(self):
+        """Actualiza la lista de políticas en la GUI."""
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+        for pol in self.politicas:
+            self.tree.insert("", "end", values=(pol,))
+
+    def agregar_politica(self):
+        """Agrega una nueva política a la lista."""
+        nueva = self.entry_nueva.get().strip()
+        if not nueva:
+            messagebox.showwarning("Campo vacío", "Por favor, ingresa una política de seguridad.")
+            return
+        if nueva in self.politicas:
+            messagebox.showwarning("Duplicado", "Esta política ya existe.")
+            return
+        self.politicas.append(nueva)
+        self.actualizar_lista()
+        self.entry_nueva.delete(0, tk.END)
+
+    def editar_politica(self):
+        """Edita la política seleccionada."""
+        seleccion = self.tree.selection()
+        if not seleccion:
+            messagebox.showwarning("Sin selección", "Selecciona una política para editar.")
+            return
+        idx = self.tree.index(seleccion[0])
+        actual = self.politicas[idx]
+        nueva = simpledialog.askstring("Editar política", "Edita la política:", initialvalue=actual)
+        if nueva and nueva.strip():
+            self.politicas[idx] = nueva.strip()
+            self.actualizar_lista()
+
+    def eliminar_politica(self):
+        """Elimina la política seleccionada."""
+        seleccion = self.tree.selection()
+        if not seleccion:
+            messagebox.showwarning("Sin selección", "Selecciona una política para eliminar.")
+            return
+        idx = self.tree.index(seleccion[0])
+        pol = self.politicas[idx]
+        if messagebox.askyesno("Eliminar", f"¿Eliminar la política?\n\n{pol}"):
+            del self.politicas[idx]
+            self.actualizar_lista()
+
+    def limpiar_campo(self):
+        """Limpia el campo de entrada."""
+        self.entry_nueva.delete(0, tk.END)
+
+    def guardar_html(self):
+        """Guarda las políticas en el archivo HTML."""
+        crear_html_politicas(self.politicas)
+        messagebox.showinfo("Guardado", "Las políticas se han guardado en el archivo HTML.")
+
+# --- Código principal ---
+
+if __name__ == "__main__":
+    app = PoliticasSeguridadApp()
+    app.mainloop()
