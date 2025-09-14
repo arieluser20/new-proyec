@@ -1,0 +1,94 @@
+import tkinter as tk
+from tkinter import messagebox, filedialog
+import string
+import random
+
+# --- Funciones de ciberseguridad ---
+
+def verificar_contraseña(pw):
+    """Verifica si la contraseña es segura."""
+    if len(pw) < 8:
+        return "Demasiado corta"
+    if not any(c.islower() for c in pw):
+        return "Debe tener minúsculas"
+    if not any(c.isupper() for c in pw):
+        return "Debe tener mayúsculas"
+    if not any(c.isdigit() for c in pw):
+        return "Debe tener números"
+    if not any(c in string.punctuation for c in pw):
+        return "Debe tener símbolos"
+    return "Segura"
+
+def generar_contraseña(longitud=12):
+    """Genera una contraseña segura."""
+    chars = string.ascii_letters + string.digits + string.punctuation
+    pw = ''.join(random.choice(chars) for _ in range(longitud))
+    return pw
+
+def analizar_archivo(path):
+    """Busca palabras clave sensibles en un archivo."""
+    claves = ["password", "secret", "clave", "contraseña", "token"]
+    encontrados = []
+    try:
+        with open(path, "r", encoding="utf-8", errors="ignore") as f:
+            for i, linea in enumerate(f, 1):
+                for clave in claves:
+                    if clave in linea.lower():
+                        encontrados.append(f"Línea {i}: {linea.strip()}")
+    except Exception as e:
+        return [f"Error: {e}"]
+    return encontrados if encontrados else ["No se encontraron palabras sensibles."]
+
+# --- Interfaz gráfica ---
+
+class CiberseguridadApp:
+    def __init__(self, root):
+        self.root = root
+        root.title("Herramientas Básicas de Ciberseguridad")
+
+        # Etiqueta y campo para verificar contraseña
+        tk.Label(root, text="Verificar contraseña:").grid(row=0, column=0, sticky="w")
+        self.entry_pw = tk.Entry(root, show="*", width=30)
+        self.entry_pw.grid(row=0, column=1)
+        tk.Button(root, text="Verificar", command=self.verificar).grid(row=0, column=2)
+
+        # Etiqueta y botón para generar contraseña
+        tk.Label(root, text="Generar contraseña segura:").grid(row=1, column=0, sticky="w")
+        tk.Button(root, text="Generar", command=self.generar).grid(row=1, column=1)
+        self.label_pw_gen = tk.Label(root, text="", fg="blue")
+        self.label_pw_gen.grid(row=1, column=2)
+
+        # Análisis de archivo
+        tk.Label(root, text="Analizar archivo:").grid(row=2, column=0, sticky="w")
+        tk.Button(root, text="Seleccionar archivo", command=self.analizar).grid(row=2, column=1)
+        self.text_result = tk.Text(root, height=8, width=50)
+        self.text_result.grid(row=3, column=0, columnspan=3)
+
+        # Botón limpiar
+        tk.Button(root, text="Limpiar", command=self.limpiar).grid(row=4, column=1)
+
+    def verificar(self):
+        pw = self.entry_pw.get()
+        resultado = verificar_contraseña(pw)
+        messagebox.showinfo("Verificación", f"Resultado: {resultado}")
+
+    def generar(self):
+        pw = generar_contraseña()
+        self.label_pw_gen.config(text=pw)
+
+    def analizar(self):
+        path = filedialog.askopenfilename(title="Selecciona un archivo de texto")
+        if path:
+            resultados = analizar_archivo(path)
+            self.text_result.delete(1.0, tk.END)
+            for r in resultados:
+                self.text_result.insert(tk.END, r + "\n")
+
+    def limpiar(self):
+        self.entry_pw.delete(0, tk.END)
+        self.label_pw_gen.config(text="")
+        self.text_result.delete(1.0, tk.END)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    app
