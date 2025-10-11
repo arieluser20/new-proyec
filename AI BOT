@@ -1,0 +1,58 @@
+tensorflow.keras.applications# ===============================
+# AI Photographer & Educational Tool
+# ===============================
+# Autor: Ariel Pontón
+# Función: Programa de IA que ayuda a tomar fotos, clasificarlas y enseñar conceptos de IA.
+# ===============================
+
+import cv2
+import os
+import numpy as np
+from tensorflow.keras.applications import MobileNetV2
+from tensorflow.keras.applications.mobilenet_v2 import preprocess_input, decode_predictions
+from tensorflow.keras.preprocessing.image import img_to_array
+from datetime import datetime
+
+# ===============================
+# CONFIGURACIÓN GLOBAL
+# ===============================
+PHOTO_DIR = "photos"
+EDU_DIR = "education"
+if not os.path.exists(PHOTO_DIR):
+    os.makedirs(PHOTO_DIR)
+if not os.path.exists(EDU_DIR):
+    os.makedirs(EDU_DIR)
+
+# ===============================
+# CLASE: Camara
+# ===============================
+class Camera:
+    def __init__(self, camera_index=0):
+        self.cap = cv2.VideoCapture(camera_index)
+        if not self.cap.isOpened():
+            print("[ERROR] No se pudo abrir la cámara")
+        else:
+            print("[INFO] Cámara inicializada correctamente")
+
+    def capture_photo(self, filename=None):
+        ret, frame = self.cap.read()
+        if not ret:
+            print("[ERROR] No se pudo capturar la foto")
+            return None
+        if filename is None:
+            filename = datetime.now().strftime("%Y%m%d_%H%M%S") + ".jpg"
+        filepath = os.path.join(PHOTO_DIR, filename)
+        cv2.imwrite(filepath, frame)
+        print(f"[INFO] Foto guardada en {filepath}")
+        return filepath
+
+    def release(self):
+        self.cap.release()
+        cv2.destroyAllWindows()
+        print("[INFO] Cámara liberada")
+
+# ===============================
+# CLASE: AIClassifier
+# ===============================
+class AIClassifier:
+    def
