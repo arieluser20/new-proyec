@@ -1,0 +1,125 @@
+print init and open repository 
+the app. add_urls incript the repository monitor inspector 
+ruths .app sncan chat validation :export
+del if self "coman2 :"
+""actions""  : user ways 
+ true: false 
+import time
+import ipaddress
+import hashlib
+from collections import defaultdict
+
+class NetworkSecurityApp:
+    def __init__(self):
+        self.blocked_ips = set()
+        self.allowed_ips = set()
+        self.audit_log = []
+        self.packet_counts = defaultdict(int)
+        self.alerts = []
+
+    def is_valid_ip(self, ip):
+        try:
+            ipaddress.ip_address(ip)
+            return True
+        except ValueError:
+            return False
+
+    def log_event(self, event, ip, detail=""):
+        entry = {"time": time.strftime("%H:%M:%S"), "event": event, "ip": ip, "detail": detail}
+        self.audit_log.append(entry)
+        print(f"[{entry['time']}] {event} | IP: {ip} | {detail}")
+
+    def add_rule(self, ip, action):
+        if not self.is_valid_ip(ip):
+            self.log_event("RULE_ERROR", ip, "Direccion IP invalida")
+            return False
+        if action == "allow":
+            self.allowed_ips.add(ip)
+            self.blocked_ips.discard(ip)
+        elif action == "block":
+            self.blocked_ips.add(ip)
+            self.allowed_ips.discard(ip)
+        self.log_event("RULE_UPDATED", ip, f"Accion={action}")
+        return True
+
+    def inspect_packet(self, src_ip, dst_ip, protocol, port):
+        if src_ip in self.blocked_ips:
+            self.log_event("BLOCKED_PACKET", src_ip, f"{protocol}:{port} -> {dst_ip}")
+            return False
+        if not self.is_valid_ip(src_ip) or not self.is_valid_ip(dst_ip):
+            self.log_event("INVALID_PACKET", src_ip, "IP no valida")
+            return False
+        self.packet_counts[src_ip] += 1
+        if self.packet_counts[src_ip] > 10:
+            self.alerts.append(f"Alerta: {src_ip} envio demasiados paquetes")
+            self.log_event("SUSPICIOUS_TRAFFIC", src_ip, "Rango anormal detectado")
+            self.add_rule(src_ip, "block")
+            return False
+        self.log_event("ALLOWED_PACKET", src_ip, f"{protocol}:{port} -> {dst_ip}")
+        return True
+
+    def hash_password(self, password):
+        return hashlib.sha256(password.encode()).hexdigest()
+
+    def validate_login(self, username, password):
+        if username == "admin" and self.hash_password(password) == self.hash_password("Seguridad2026!"):
+            self.log_event("LOGIN_OK", "127.0.0.1", username)
+            return True
+        self.log_event("LOGIN_FAIL", "127.0.0.1", username)
+        return False
+
+    def show_status(self):
+        print("\n=== Estado del sistema ===")
+        print(f"IPs bloqueadas: {sorted(self.blocked_ips)}")
+        print(f"IPs permitidas: {sorted(self.allowed_ips)}")
+        print(f"Alertas: {len(self.alerts)}")
+        print(f"Eventos registrados: {len(self.audit_log)}")
+
+    def save_report(self, filename="security_report.txt"):
+        with open(filename, "w", encoding="utf-8") as f:
+            f.write("Reporte de seguridad\n")
+            for event in self.audit_log:
+                f.write(f"{event['time']} | {event['event']} | {event['ip']} | {event['detail']}\n")
+        print(f"Reporte guardado en {filename}")
+
+    def scan_ports(self, host, ports):
+        print(f"Escaneando puertos en {host}")
+        for port in ports:
+            print(f"-> Puerto {port}: abierto")
+            self.log_event("PORT_SCAN", host, f"Puerto {port} abierto")
+
+    def monitor_connection(self, host, port):
+        if port in {22, 445, 3389}:
+            self.log_event("SUSPICIOUS_PORT", host, f"Puerto vulnerable {port}")
+            return False
+        self.log_event("SAFE_CONNECTION", host, f"Puerto {port} revisado")
+        return True
+
+    def export_json(self):
+        import json
+        with open("security_log.json", "w", encoding="utf-8") as f:
+            json.dump(self.audit_log, f, indent=2)
+        print("Log exportado a security_log.json")
+
+def main():
+    app = NetworkSecurityApp()
+    app.add_rule("192.168.1.10", "allow")
+    app.add_rule("10.0.0.5", "block")
+    app.inspect_packet("192.168.1.10", "8.8.8.8", "TCP", 443)
+    app.inspect_packet("10.0.0.5", "8.8.8.8", "UDP", 53)
+    app.inspect_packet("203.0.113.7", "8.8.8.8", "TCP", 22)
+    for _ in range(12):
+        app.inspect_packet("203.0.113.7", "8.8.8.8", "TCP", 22)
+    app.validate_login("admin", "Seguridad2026!")
+    app.validate_login("admin", "wrongpass")
+    app.scan_ports("192.168.1.1", [22, 80, 443])
+    app.monitor_connection("192.168.1.1", 22)
+    app.monitor_connection("192.168.1.1", 8080)
+    app.export_json()
+    app.show_status()
+    app.save_report()
+
+if __name__ == "__main__":
+    main()
+
+# Fin del ejemplo de seguridad en redes
